@@ -1,111 +1,217 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-mute: var(--mute);
+  --color-line: var(--line);
+  --color-acc: var(--acc);
+  --color-accfg: var(--accfg);
+  --font-sans: "Geist", system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+}
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  --bg: #f6f6f4;
+  --card: #fff;
+  --ink: #1c1c1f;
+  --mute: #6b6b73;
+  --line: #e6e6e2;
+  --acc: #d9531e;
+  --accfg: #fff;
+  --tx: 100%;
+  --sh: 0 1px 2px rgb(60 40 20 / 0.05), 0 8px 24px -12px rgb(60 40 20 / 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
+    --bg: #121214;
+    --card: #1b1b1f;
+    --ink: #ededf0;
+    --mute: #9a9aa4;
+    --line: #2c2c32;
+    --acc: #f06a35;
+    --accfg: #1a0d06;
+    --tx: 70%;
+    --sh: 0 8px 24px -12px rgb(0 0 0 / 0.6);
   }
 }
 
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+html {
+  color-scheme: light dark;
 }
 
 body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Geist", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
   margin: 0;
+  min-height: 100dvh;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+/* Reusable surfaces, ported from Routewing template */
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--sh);
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+.inp {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 12px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 14px;
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+.inp:focus {
+  outline: 2px solid var(--acc);
+  outline-offset: 1px;
 }
-p {
-  margin: 0;
+.inp.bad {
+  border-color: #dc2626;
+}
+textarea.inp {
+  height: auto;
+  min-height: 84px;
+  padding: 10px 12px;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
+.btn {
   display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 14px;
+  white-space: nowrap;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 0.15s, background 0.15s, filter 0.15s;
+}
+.btn:hover {
+  background: var(--bg);
+}
+.btn:active {
+  transform: scale(0.98);
+}
+.btn:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-p {
+  background: var(--acc);
+  color: var(--accfg);
+  border-color: transparent;
+}
+.btn-p:hover {
+  background: var(--acc);
+  filter: brightness(1.07);
+}
+.btn-danger {
+  color: #dc2626;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.badge {
+  --c: #64748b;
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--c) var(--tx), var(--ink));
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+}
+.s-Pending { --c: #64748b; }
+.s-Picked { --c: #0284c7; }
+.s-Transit { --c: #2563eb; }
+.s-Out { --c: #d97706; }
+.s-Delivered { --c: #059669; }
+.s-Cancelled { --c: #71717a; }
+.s-Failed { --c: #dc2626; }
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 42px;
+  padding: 0 12px;
+  border-radius: 12px;
+  color: var(--mute);
+  font-size: 14px;
+  font-weight: 500;
+  width: 100%;
+  text-align: left;
+}
+.nav:hover {
+  background: var(--bg);
+  color: var(--ink);
+}
+.nav.on {
+  background: var(--ink);
+  color: var(--card);
+}
+.nav:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 1px;
+}
+
+.sk {
+  background: linear-gradient(90deg, var(--line), var(--bg), var(--line));
+  background-size: 200% 100%;
+  animation: sk 1.2s infinite;
+  border-radius: 10px;
+}
+@keyframes sk {
+  to { background-position: -200% 0; }
+}
+@keyframes up {
+  from { opacity: 0; transform: translateY(8px); }
+}
+.up { animation: up 0.35s ease both; }
+@keyframes sl {
+  from { transform: translateX(100%); }
+}
+.sl { animation: sl 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+tbody tr.rowlink { cursor: pointer; }
+tbody tr.rowlink:hover {
+  background: color-mix(in srgb, var(--line) 40%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Toastify tone to match Routewing */
+.Toastify__toast {
+  border-radius: 12px !important;
+  border: 1px solid var(--line);
+  background: var(--card) !important;
+  color: var(--ink) !important;
+  font-family: "Geist", system-ui, sans-serif !important;
+  font-size: 14px !important;
+  box-shadow: var(--sh) !important;
 }
