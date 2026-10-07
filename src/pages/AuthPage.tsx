@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Eye, EyeOff, Package } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { useAuth } from '../store/AuthContext';
+import { nameFromEmail, useAuth } from '../store/AuthContext';
 
 type Mode = 'login' | 'register' | 'forgot';
 
@@ -55,7 +55,7 @@ export function AuthPage() {
       navigate('/');
       return;
     }
-    login('Sushanth Reddy', values.email);
+    login(nameFromEmail(values.email), values.email);
     toast.success('Welcome to Routewing');
     navigate('/');
   };
@@ -80,7 +80,7 @@ export function AuthPage() {
               <span className="text-[13px] font-medium">Full name</span>
               <input
                 autoComplete="name"
-                placeholder="Aarav Menon"
+                placeholder="Your full name"
                 className={`inp mt-1.5 ${errors.name ? 'bad' : ''}`}
                 {...field('name', { required: 'Enter your full name' })}
               />
@@ -184,4 +184,5 @@ export function AuthPage() {
     </div>
   );
 }
+
 

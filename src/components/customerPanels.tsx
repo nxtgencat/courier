@@ -18,15 +18,19 @@ export function CustomerModal({ customer, onClose }: { customer?: Customer; onCl
       : { name: '', email: '', phone: '', address: '', city: '', zip: '' },
   });
 
-  const onSubmit = (v: CustomerInput) => {
-    if (customer) {
-      updateCustomer(customer.id, v);
-      toast.success('Customer updated');
-    } else {
-      createCustomer(v);
-      toast.success('Customer added');
+  const onSubmit = async (v: CustomerInput) => {
+    try {
+      if (customer) {
+        await updateCustomer(customer.id, v);
+        toast.success('Customer updated through DummyJSON');
+      } else {
+        await createCustomer(v);
+        toast.success('Customer added through DummyJSON');
+      }
+      onClose();
+    } catch {
+      toast.error('DummyJSON request failed. Try again.');
     }
-    onClose();
   };
 
   return (
@@ -37,7 +41,7 @@ export function CustomerModal({ customer, onClose }: { customer?: Customer; onCl
         <>
           <button type="button" onClick={onClose} className="btn">Cancel</button>
           <button type="submit" form="customer-form" disabled={isSubmitting} className="btn btn-p">
-            {customer ? 'Save changes' : 'Add customer'}
+            {isSubmitting ? 'Saving' : customer ? 'Save changes' : 'Add customer'}
           </button>
         </>
       }
@@ -58,8 +62,12 @@ export function CustomerModal({ customer, onClose }: { customer?: Customer; onCl
         <Field label="Mobile number" error={errors.phone?.message}>
           <input
             inputMode="tel"
+            placeholder="+1 555-010-2030"
             className={`inp ${errors.phone ? 'bad' : ''}`}
-            {...register('phone', { required: 'Enter a mobile number', pattern: { value: /^[6-9]\d{9}$/, message: 'Enter a 10 digit mobile number' } })}
+            {...register('phone', {
+              required: 'Enter a mobile number',
+              validate: (v) => (v.replace(/\D/g, '').length >= 7 && v.replace(/\D/g, '').length <= 15) || 'Enter a valid phone number',
+            })}
           />
         </Field>
         <div className="sm:col-span-2">
@@ -72,8 +80,12 @@ export function CustomerModal({ customer, onClose }: { customer?: Customer; onCl
         </Field>
         <Field label="Postal code" error={errors.zip?.message}>
           <input
+            placeholder="29112"
             className={`inp ${errors.zip ? 'bad' : ''}`}
-            {...register('zip', { required: 'Enter a postal code', pattern: { value: /^\d{6}$/, message: 'Enter a 6 digit postal code' } })}
+            {...register('zip', {
+              required: 'Enter a postal code',
+              validate: (v) => (/^[A-Za-z0-9\s-]{3,12}$/.test(v.trim()) ? true : 'Enter a valid postal code'),
+            })}
           />
         </Field>
       </form>
@@ -100,7 +112,7 @@ export function CustomerProfile({ customer, onClose, onSelectShipment }: { custo
       <dl className="mt-6 space-y-4 text-sm">
         <div className="flex gap-3">
           <span className="text-xl text-mute"><EnvelopeIcon /></span>
-          <div><dt className="text-xs text-mute">Email</dt><dd className="font-medium">{customer.email}</dd></div>
+          <div><dt className="text-xs text-mute">Email</dt><dd className="font-medium break-all">{customer.email}</dd></div>
         </div>
         <div className="flex gap-3">
           <span className="text-xl text-mute"><PhoneIcon /></span>

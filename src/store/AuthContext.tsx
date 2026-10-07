@@ -12,11 +12,21 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+export function nameFromEmail(email: string): string {
+  const prefix = email.split('@')[0] ?? 'operator';
+  return prefix
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map((p) => p[0]?.toUpperCase() + p.slice(1))
+    .join(' ');
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => readJSON<AuthUser | null>(KEYS.user, null));
 
   const login = useCallback((name: string, email: string) => {
-    const value = { name: name.trim() || 'Sushanth Reddy', email: email.trim() };
+    const cleanEmail = email.trim();
+    const value = { name: name.trim() || nameFromEmail(cleanEmail), email: cleanEmail };
     setUser(value);
     writeJSON(KEYS.user, value);
   }, []);

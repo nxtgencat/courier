@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Check, MapPin, Pencil, Trash2, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import type { DeliveryStatus, Shipment } from '../types';
-import { PARCEL_TYPES, STATUSES } from '../types';
+import { STATUSES } from '../types';
 import { useAuth } from '../store/AuthContext';
 import { useCourier } from '../store/CourierContext';
 import type { ShipmentInput } from '../store/CourierContext';
@@ -46,10 +46,12 @@ export function ShipmentModal({
   shipment?: Shipment;
   onClose: () => void;
 }) {
-  const { customers, createShipment, updateShipment } = useCourier();
+  const { customers, parcelTypes, createShipment, updateShipment } = useCourier();
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ShipmentFormValues>({
     defaultValues: shipment
@@ -66,18 +68,26 @@ export function ShipmentModal({
         }
       : {
           senderId: customers[0]?.id ?? 1,
-          receiverId: customers[1]?.id ?? 2,
-          pickup: '',
-          drop: '',
+          receiverId: customers[1]?.id ?? customers[0]?.id ?? 1,
+          pickup: customers[0] ? `${customers[0].address}, ${customers[0].city} ${customers[0].zip}` : '',
+          drop: customers[1] ? `${customers[1].address}, ${customers[1].city} ${customers[1].zip}` : '',
           weight: 1,
-          type: 'Parcel',
+          type: parcelTypes[0] ?? 'general',
           date: new Date().toISOString().slice(0, 10),
           eta: new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10),
           status: 'Pending',
         },
   });
 
-  const onSubmit = (v: ShipmentFormValues) => {
+  const senderId = watch('senderId');
+  const receiverId = watch('receiverId');
+
+  const fillFromCustomer = (which: 'pickup' | 'drop', id: number) => {
+    const c = customers.find((x) => x.id === id);
+    if (c) setValue(which, `${c.address}, ${c.city} ${c.zip}`, { shouldValidate: true });
+  };
+
+  const onSubmit = async (v: ShipmentFormValues) => {
     if (v.eta < v.date) {
       toast.error('Expected date must be on or after shipping date');
       return;
@@ -86,14 +96,18 @@ export function ShipmentModal({
       toast.error('Sender and receiver must be different');
       return;
     }
-    if (shipment) {
-      updateShipment(shipment.id, v, v.status);
-      toast.success('Shipment updated');
-    } else {
-      const rec = createShipment(v);
-      toast.success(`Shipment ${rec.trackingNumber} created`);
+    try {
+      if (shipment) {
+        await updateShipment(shipment.id, v, v.status);
+        toast.success('Shipment updated through DummyJSON');
+      } else {
+        const rec = await createShipment(v);
+        toast.success(`Shipment ${rec.trackingNumber} created through DummyJSON`);
+      }
+      onClose();
+    } catch {
+      toast.error('DummyJSON request failed. Try again.');
     }
-    onClose();
   };
 
   return (
@@ -106,7 +120,7 @@ export function ShipmentModal({
             Cancel
           </button>
           <button type="submit" form="shipment-form" disabled={isSubmitting} className="btn btn-p">
-            {shipment ? 'Save changes' : 'Create shipment'}
+            {isSubmitting ? 'Saving' : shipment ? 'Save changes' : 'Create shipment'}
           </button>
         </>
       }
@@ -120,7 +134,14 @@ export function ShipmentModal({
           <p className="sm:col-span-2 text-sm text-mute">A tracking number is generated when you save.</p>
         )}
         <Field label="Sender" error={errors.senderId?.message}>
-          <select className="inp" {...register('senderId', { valueAsNumber: true, required: 'Select a sender' })}>
+          <select
+            className="inp"
+            {...register('senderId', {
+              valueAsNumber: true,
+              required: 'Select a sender',
+              onChange: (e) => fillFromCustomer('pickup', Number(e.target.value)),
+            })}
+          >
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -129,7 +150,14 @@ export function ShipmentModal({
           </select>
         </Field>
         <Field label="Receiver" error={errors.receiverId?.message}>
-          <select className="inp" {...register('receiverId', { valueAsNumber: true, required: 'Select a receiver' })}>
+          <select
+            className="inp"
+            {...register('receiverId', {
+              valueAsNumber: true,
+              required: 'Select a receiver',
+              onChange: (e) => fillFromCustomer('drop', Number(e.target.value)),
+            })}
+          >
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -137,6 +165,9 @@ export function ShipmentModal({
             ))}
           </select>
         </Field>
+        {senderId === receiverId ? (
+          <p className="sm:col-span-2 text-xs text-red-600">Sender and receiver must be different.</p>
+        ) : null}
         <div className="sm:col-span-2">
           <Field label="Pickup address" error={errors.pickup?.message}>
             <input className={`inp ${errors.pickup ? 'bad' : ''}`} {...register('pickup', { required: 'Enter a pickup address' })} />
@@ -156,8 +187,8 @@ export function ShipmentModal({
           />
         </Field>
         <Field label="Parcel type">
-          <select className="inp" {...register('type')}>
-            {PARCEL_TYPES.map((t) => (
+          <select className="inp" {...register('type', { required: true })}>
+            {parcelTypes.map((t) => (
               <option key={t}>{t}</option>
             ))}
           </select>
@@ -271,4 +302,3 @@ export function ShipmentDetail({
     </div>
   );
 }
-
