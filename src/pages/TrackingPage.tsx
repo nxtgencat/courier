@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MapPin, Search, TriangleAlert } from 'lucide-react';
 import { AppShell } from '../components/layout';
 import { Timeline } from '../components/shipmentPanels';
@@ -7,10 +7,20 @@ import { useCourier } from '../store/CourierContext';
 import { formatDate, parseTrackingInput } from '../lib/format';
 
 export function TrackingPage() {
-  const { shipments, customerName } = useCourier();
-  const [raw, setRaw] = useState('RW482211IN, RW482173IN');
-  const [ids, setIds] = useState<string[]>(() => parseTrackingInput('RW482211IN, RW482173IN'));
+  const { shipments, customerName, loading, loadError, reload } = useCourier();
+  const [raw, setRaw] = useState('');
+  const [ids, setIds] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [primed, setPrimed] = useState(false);
+
+  useEffect(() => {
+    if (!primed && !loading && shipments.length > 0) {
+      const sample = shipments.slice(0, 2).map((s) => s.trackingNumber).join(', ');
+      setRaw(sample);
+      setIds(parseTrackingInput(sample));
+      setPrimed(true);
+    }
+  }, [primed, loading, shipments]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +35,12 @@ export function TrackingPage() {
 
   return (
     <AppShell title="Tracking">
+      {loadError && !loading ? (
+        <div className="panel px-5 py-4 mb-5 text-sm flex flex-wrap items-center gap-3">
+          <span className="text-mute">{loadError}</span>
+          <button type="button" onClick={reload} className="btn !h-9 ml-auto">Retry DummyJSON sync</button>
+        </div>
+      ) : null}
       <form onSubmit={submit} className="flex gap-3 mb-6">
         <div className="relative flex-1">
           <span className="absolute left-3.5 top-3 text-mute"><Search size={18} /></span>
@@ -32,14 +48,14 @@ export function TrackingPage() {
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
             aria-label="Tracking numbers"
-            placeholder="RW482211IN, RW482173IN"
+            placeholder={shipments[0]?.trackingNumber ? `${shipments[0].trackingNumber}, ${shipments[1]?.trackingNumber ?? ''}` : 'Enter tracking numbers'}
             className="inp !pl-10 font-mono"
           />
         </div>
-        <button type="submit" className="btn btn-p" disabled={busy}>Track</button>
+        <button type="submit" className="btn btn-p" disabled={busy || loading}>Track</button>
       </form>
 
-      {busy ? (
+      {loading || busy ? (
         <div className="panel p-6"><SkeletonRows count={2} /></div>
       ) : ids.length === 0 ? (
         <div className="panel overflow-hidden">
@@ -86,6 +102,7 @@ export function TrackingPage() {
           })}
         </div>
       )}
+      <p className="text-xs text-mute mt-4">Tracking resolved against DummyJSON shipments. Separate multiple numbers with commas.</p>
     </AppShell>
   );
 }

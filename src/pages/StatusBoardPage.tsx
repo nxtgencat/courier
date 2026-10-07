@@ -9,15 +9,37 @@ import { formatDate } from '../lib/format';
 import { toast } from 'react-toastify';
 
 export function StatusBoardPage() {
-  const { shipments, loading, customerName, deleteShipment } = useCourier();
+  const { shipments, loading, loadError, customerName, deleteShipment, reload } = useCourier();
   const [detailId, setDetailId] = useState<number | null>(null);
   const [editing, setEditing] = useState<Shipment | undefined>(undefined);
   const [confirmId, setConfirmId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const detail = detailId != null ? shipments.find((s) => s.id === detailId) : undefined;
 
+  const confirmDelete = async () => {
+    if (confirmId == null) return;
+    setDeleting(true);
+    try {
+      await deleteShipment(confirmId);
+      toast.success('Shipment deleted through DummyJSON');
+      setConfirmId(null);
+      setDetailId(null);
+    } catch {
+      toast.error('DummyJSON delete failed. Try again.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <AppShell title="Delivery status">
+      {loadError && !loading ? (
+        <div className="panel px-5 py-4 mb-5 text-sm flex flex-wrap items-center gap-3">
+          <span className="text-mute">{loadError}</span>
+          <button type="button" onClick={reload} className="btn !h-9 ml-auto">Retry DummyJSON sync</button>
+        </div>
+      ) : null}
       {loading ? (
         <div className="panel p-6"><SkeletonRows count={4} /></div>
       ) : (
@@ -53,6 +75,7 @@ export function StatusBoardPage() {
           })}
         </div>
       )}
+      <p className="text-xs text-mute mt-3">Status columns group DummyJSON shipments by live delivery state.</p>
 
       {detail ? (
         <Drawer label={`Shipment ${detail.trackingNumber}`} onClose={() => setDetailId(null)}>
@@ -72,22 +95,13 @@ export function StatusBoardPage() {
           footer={
             <>
               <button type="button" onClick={() => setConfirmId(null)} className="btn">Cancel</button>
-              <button
-                type="button"
-                className="btn btn-p !bg-red-600"
-                onClick={() => {
-                  deleteShipment(confirmId);
-                  toast.success('Shipment deleted');
-                  setConfirmId(null);
-                  setDetailId(null);
-                }}
-              >
-                Delete
+              <button type="button" className="btn btn-p !bg-red-600" disabled={deleting} onClick={confirmDelete}>
+                {deleting ? 'Deleting' : 'Delete'}
               </button>
             </>
           }
         >
-          <p className="text-sm text-mute">This cannot be undone.</p>
+          <p className="text-sm text-mute">This removes the shipment through DummyJSON and cannot be undone.</p>
         </Modal>
       ) : null}
     </AppShell>

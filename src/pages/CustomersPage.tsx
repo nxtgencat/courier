@@ -12,7 +12,7 @@ import type { Customer, Shipment } from '../types';
 const PER = 8;
 
 export function CustomersPage() {
-  const { customers, shipments, loading, deleteCustomer } = useCourier();
+  const { customers, shipments, loading, loadError, apiLive, deleteCustomer, reload } = useCourier();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
@@ -22,6 +22,7 @@ export function CustomersPage() {
   const [confirmId, setConfirmId] = useState<number | null>(null);
   const [shipmentId, setShipmentId] = useState<number | null>(null);
   const [editingShipment, setEditingShipment] = useState<Shipment | undefined>(undefined);
+  const [deleting, setDeleting] = useState(false);
 
   const closeNew = () => {
     if (params.get('new')) {
@@ -40,8 +41,29 @@ export function CustomersPage() {
   const profile = profileId != null ? customers.find((c) => c.id === profileId) : undefined;
   const shipDetail = shipmentId != null ? shipments.find((s) => s.id === shipmentId) : undefined;
 
+  const confirmDelete = async () => {
+    if (confirmId == null) return;
+    setDeleting(true);
+    try {
+      await deleteCustomer(confirmId);
+      toast.success('Customer deleted through DummyJSON');
+      setConfirmId(null);
+      setProfileId(null);
+    } catch {
+      toast.error('DummyJSON delete failed. Try again.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <AppShell title="Customers">
+      {loadError && !loading ? (
+        <div className="panel px-5 py-4 mb-5 text-sm flex flex-wrap items-center gap-3">
+          <span className="text-mute">{loadError}</span>
+          <button type="button" onClick={reload} className="btn !h-9 ml-auto">Retry DummyJSON sync</button>
+        </div>
+      ) : null}
       <div className="flex gap-3 mb-5">
         <div className="relative flex-1">
           <span className="absolute left-3.5 top-3 text-mute"><Search size={18} /></span>
@@ -63,7 +85,11 @@ export function CustomersPage() {
       ) : (
         <div className="panel overflow-hidden">
           {total === 0 ? (
-            <EmptyState icon={Users} title="No customers found" hint="Try a different name, city or email." />
+            <EmptyState
+              icon={Users}
+              title={customers.length === 0 ? 'No customers from DummyJSON yet' : 'No customers found'}
+              hint={customers.length === 0 ? 'Retry the DummyJSON sync to load the directory.' : 'Try a different name, city or email.'}
+            />
           ) : (
             <>
               <div className="overflow-x-auto">
@@ -86,7 +112,7 @@ export function CustomersPage() {
                             <div><p className="font-medium">{c.name}</p><p className="text-xs text-mute">{c.email}</p></div>
                           </div>
                         </td>
-                        <td className="font-mono text-mute">{c.phone}</td>
+                        <td className="font-mono text-mute text-xs">{c.phone}</td>
                         <td>{c.city}, {c.zip}</td>
                         <td className="font-mono">{shipments.filter((s) => s.senderId === c.id || s.receiverId === c.id).length}</td>
                         <td className="pr-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
@@ -107,6 +133,8 @@ export function CustomersPage() {
           )}
         </div>
       )}
+
+      <p className="text-xs text-mute mt-3">Customer directory from DummyJSON users. {apiLive ? 'Live sync on.' : 'Sync paused.'}</p>
 
       {creating ? <CustomerModal onClose={closeNew} /> : null}
       {editing ? <CustomerModal customer={editing} onClose={() => setEditing(undefined)} /> : null}
@@ -133,22 +161,13 @@ export function CustomersPage() {
           footer={
             <>
               <button type="button" onClick={() => setConfirmId(null)} className="btn">Cancel</button>
-              <button
-                type="button"
-                className="btn btn-p !bg-red-600"
-                onClick={() => {
-                  deleteCustomer(confirmId);
-                  toast.success('Customer deleted');
-                  setConfirmId(null);
-                  setProfileId(null);
-                }}
-              >
-                Delete
+              <button type="button" className="btn btn-p !bg-red-600" disabled={deleting} onClick={confirmDelete}>
+                {deleting ? 'Deleting' : 'Delete'}
               </button>
             </>
           }
         >
-          <p className="text-sm text-mute">This cannot be undone. Past shipments keep the stored name.</p>
+          <p className="text-sm text-mute">This removes the customer through DummyJSON. Past shipments keep the stored name.</p>
         </Modal>
       ) : null}
     </AppShell>

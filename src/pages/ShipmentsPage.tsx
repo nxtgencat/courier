@@ -7,13 +7,13 @@ import { ShipmentDetail, ShipmentModal } from '../components/shipmentPanels';
 import { Drawer, EmptyState, Modal, PaginationFooter, SkeletonRows, StatusBadge } from '../components/ui';
 import { useCourier } from '../store/CourierContext';
 import type { Shipment } from '../types';
-import { PARCEL_TYPES, STATUSES } from '../types';
+import { STATUSES } from '../types';
 import { formatDate } from '../lib/format';
 
 const PER = 8;
 
 export function ShipmentsPage() {
-  const { shipments, customers, loading, customerName, deleteShipment } = useCourier();
+  const { shipments, parcelTypes, loading, loadError, syncing, apiLive, customerName, deleteShipment, reload } = useCourier();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState('');
   const [type, setType] = useState('');
@@ -24,6 +24,7 @@ export function ShipmentsPage() {
   const [creating, setCreating] = useState(params.get('new') === '1');
   const [detailId, setDetailId] = useState<number | null>(null);
   const [confirmId, setConfirmId] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const closeNewParam = () => {
     if (params.get('new')) {
@@ -47,8 +48,29 @@ export function ShipmentsPage() {
   const rows = filtered.slice((page - 1) * PER, page * PER);
   const detail = detailId != null ? shipments.find((s) => s.id === detailId) : undefined;
 
+  const confirmDelete = async () => {
+    if (confirmId == null) return;
+    setDeleting(true);
+    try {
+      const found = await deleteShipment(confirmId);
+      toast.success(found ? `${found.trackingNumber} deleted through DummyJSON` : 'Shipment deleted');
+      setConfirmId(null);
+      setDetailId(null);
+    } catch {
+      toast.error('DummyJSON delete failed. Try again.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <AppShell title="Shipments">
+      {loadError ? (
+        <div className="panel px-5 py-4 mb-5 text-sm flex flex-wrap items-center gap-3">
+          <span className="text-mute">{loadError}</span>
+          <button type="button" onClick={reload} className="btn !h-9 ml-auto">Retry DummyJSON sync</button>
+        </div>
+      ) : null}
       <div className="flex flex-wrap gap-3 mb-5">
         <div className="relative flex-1 min-w-[220px]">
           <span className="absolute left-3.5 top-3 text-mute">
@@ -67,7 +89,7 @@ export function ShipmentsPage() {
         </div>
         <select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }} aria-label="Filter by type" className="inp !w-auto">
           <option value="">All types</option>
-          {PARCEL_TYPES.map((t) => (
+          {parcelTypes.map((t) => (
             <option key={t}>{t}</option>
           ))}
         </select>
@@ -89,8 +111,8 @@ export function ShipmentsPage() {
           {total === 0 ? (
             <EmptyState
               icon={Package}
-              title="No shipments match"
-              hint="Clear the search or filters, or book a new shipment."
+              title={shipments.length === 0 ? 'No shipments from DummyJSON yet' : 'No shipments match'}
+              hint={shipments.length === 0 ? 'Retry the DummyJSON sync or book the first shipment.' : 'Clear the search or filters, or book a new shipment.'}
               action={
                 <button type="button" onClick={() => setCreating(true)} className="btn btn-p">
                   New shipment
@@ -150,7 +172,9 @@ export function ShipmentsPage() {
         </div>
       )}
 
-      <p className="text-xs text-mute mt-3">Directory: {customers.length} customers loaded. Shipment data is simulated locally with DummyJSON enrichment.</p>
+      <p className="text-xs text-mute mt-3">
+        Shipments built from DummyJSON carts, users and products. {apiLive ? 'Live sync on.' : 'Sync paused.'} {syncing ? 'Syncing now.' : ''}
+      </p>
 
       {creating ? <ShipmentModal onClose={closeNewParam} /> : null}
       {editing ? <ShipmentModal shipment={editing} onClose={() => setEditing(undefined)} /> : null}
@@ -174,22 +198,13 @@ export function ShipmentsPage() {
           footer={
             <>
               <button type="button" onClick={() => setConfirmId(null)} className="btn">Cancel</button>
-              <button
-                type="button"
-                className="btn btn-p !bg-red-600"
-                onClick={() => {
-                  const found = deleteShipment(confirmId);
-                  toast.success(found ? `${found.trackingNumber} deleted` : 'Shipment deleted');
-                  setConfirmId(null);
-                  setDetailId(null);
-                }}
-              >
-                Delete
+              <button type="button" className="btn btn-p !bg-red-600" disabled={deleting} onClick={confirmDelete}>
+                {deleting ? 'Deleting' : 'Delete'}
               </button>
             </>
           }
         >
-          <p className="text-sm text-mute">This cannot be undone.</p>
+          <p className="text-sm text-mute">This removes the shipment through DummyJSON and cannot be undone.</p>
         </Modal>
       ) : null}
     </AppShell>

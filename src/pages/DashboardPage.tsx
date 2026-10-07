@@ -43,7 +43,7 @@ export function DashboardPage() {
             <div className="panel px-5 py-4 mb-6 text-sm flex flex-wrap items-center gap-3">
               <span className="text-mute">{loadError}</span>
               <button type="button" onClick={reload} className="btn !h-9 ml-auto">
-                Retry directory sync
+                Retry DummyJSON sync
               </button>
             </div>
           ) : null}
@@ -149,3 +149,4 @@ export function DashboardPage() {
     </AppShell>
   );
 }
+
