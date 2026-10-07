@@ -1,6 +1,4 @@
-import type { Customer } from '../types';
-
-interface DummyUser {
+export interface ApiUser {
   id: number;
   firstName: string;
   lastName: string;
@@ -9,56 +7,87 @@ interface DummyUser {
   address: { address: string; city: string; postalCode: string };
 }
 
-const FIRST_NAMES = ['Aarav', 'Lakshmi', 'Ravi', 'Sneha', 'Imran', 'Divya'];
-const CITIES: Array<[string, string]> = [
-  ['Hyderabad', '500034'],
-  ['Warangal', '506002'],
-  ['Vijayawada', '520010'],
-  ['Pune', '411001'],
-  ['Bengaluru', '560001'],
-  ['Kochi', '682016'],
-];
-
-function mapDummy(users: DummyUser[]): Customer[] {
-  return users.slice(0, 12).map((u, i) => {
-    const city = CITIES[i % CITIES.length];
-    const phoneDigits = u.phone.replace(/\D/g, '').slice(-10).padStart(10, '9');
-    const mobile = /^[6-9]/.test(phoneDigits) ? phoneDigits : `98${String(48201000 + i * 7331).slice(0, 8)}`;
-    return {
-      id: i + 1,
-      name: `${u.firstName} ${u.lastName}`,
-      email: u.email.toLowerCase(),
-      phone: mobile.slice(0, 10),
-      address: u.address?.address || `${12 + i * 3}, Gandhi Road`,
-      city: city[0],
-      zip: (u.address?.postalCode || city[1]).replace(/\D/g, '').slice(0, 6).padEnd(6, '0'),
-    };
-  });
+export interface ApiProduct {
+  id: number;
+  title: string;
+  category: string;
+  weight: number;
 }
 
-function mapFallback(): Customer[] {
-  return FIRST_NAMES.concat(['Karthik', 'Meera', 'Harsha', 'Pooja', 'Naveen', 'Farah']).map((n, i) => ({
-    id: i + 1,
-    name: `${n} ${['Menon', 'Prasad', 'Teja', 'Kulkarni', 'Sheikh', 'Nair', 'Rao', 'Joshi', 'Vardhan', 'Iyer', 'Chowdary', 'Siddiqui'][i]}`,
-    email: `${n.toLowerCase()}@mail.in`,
-    phone: `98${48201000 + i * 7331}`.slice(0, 10),
-    address: `${12 + i * 3}, Gandhi Road`,
-    city: CITIES[i % CITIES.length][0],
-    zip: CITIES[i % CITIES.length][1],
-  }));
+export interface ApiCartItem {
+  id: number;
+  title: string;
+  quantity: number;
 }
 
-export async function fetchCustomersFromDummyJSON(): Promise<{ data: Customer[]; live: boolean }> {
+export interface ApiCart {
+  id: number;
+  userId: number;
+  totalQuantity: number;
+  products: ApiCartItem[];
+}
+
+async function getJSON<T>(url: string, timeoutMs = 8000): Promise<T> {
+  const ctrl = new AbortController();
+  const timer = window.setTimeout(() => ctrl.abort(), timeoutMs);
   try {
-    const ctrl = new AbortController();
-    const timer = window.setTimeout(() => ctrl.abort(), 6000);
-    const res = await fetch('https://dummyjson.com/users?limit=12', { signal: ctrl.signal });
+    const res = await fetch(url, { signal: ctrl.signal });
+    if (!res.ok) throw new Error(`Request failed ${res.status} for ${url}`);
+    return (await res.json()) as T;
+  } finally {
     window.clearTimeout(timer);
-    if (!res.ok) throw new Error(`DummyJSON responded ${res.status}`);
-    const json = (await res.json()) as { users: DummyUser[] };
-    if (!Array.isArray(json.users) || json.users.length === 0) throw new Error('Empty DummyJSON payload');
-    return { data: mapDummy(json.users), live: true };
-  } catch {
-    return { data: mapFallback(), live: false };
   }
+}
+
+async function sendJSON<T>(url: string, method: string, body: unknown): Promise<T> {
+  const ctrl = new AbortController();
+  const timer = window.setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+    if (!res.ok) throw new Error(`Request failed ${res.status} for ${url}`);
+    return (await res.json()) as T;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+export function fetchUsers(limit = 30): Promise<{ users: ApiUser[] }> {
+  return getJSON<{ users: ApiUser[] }>(`https://dummyjson.com/users?limit=${limit}`);
+}
+
+export function fetchProducts(limit = 60): Promise<{ products: ApiProduct[] }> {
+  return getJSON<{ products: ApiProduct[] }>(`https://dummyjson.com/products?limit=${limit}&select=id,title,category,weight`);
+}
+
+export function fetchCarts(limit = 30): Promise<{ carts: ApiCart[] }> {
+  return getJSON<{ carts: ApiCart[] }>(`https://dummyjson.com/carts?limit=${limit}`);
+}
+
+export function apiAddUser(payload: Record<string, unknown>): Promise<ApiUser> {
+  return sendJSON<ApiUser>('https://dummyjson.com/users/add', 'POST', payload);
+}
+
+export function apiUpdateUser(id: number, payload: Record<string, unknown>): Promise<ApiUser> {
+  return sendJSON<ApiUser>(`https://dummyjson.com/users/${id}`, 'PUT', payload);
+}
+
+export function apiDeleteUser(id: number): Promise<{ id: number }> {
+  return sendJSON<{ id: number }>(`https://dummyjson.com/users/${id}`, 'DELETE', {});
+}
+
+export function apiAddCart(payload: Record<string, unknown>): Promise<ApiCart> {
+  return sendJSON<ApiCart>('https://dummyjson.com/carts/add', 'POST', payload);
+}
+
+export function apiUpdateCart(id: number, payload: Record<string, unknown>): Promise<ApiCart> {
+  return sendJSON<ApiCart>(`https://dummyjson.com/carts/${id}`, 'PUT', payload);
+}
+
+export function apiDeleteCart(id: number): Promise<{ id: number }> {
+  return sendJSON<{ id: number }>(`https://dummyjson.com/carts/${id}`, 'DELETE', {});
 }

@@ -7,12 +7,7 @@ export type DeliveryStatus =
   | 'Cancelled'
   | 'Failed Delivery';
 
-export type ParcelType =
-  | 'Document'
-  | 'Parcel'
-  | 'Fragile'
-  | 'Electronics'
-  | 'Perishable';
+export type ParcelType = string;
 
 export interface TrackingEvent {
   status: DeliveryStatus;
@@ -70,23 +65,6 @@ export const STATUSES: DeliveryStatus[] = [
   'Delivered',
   'Cancelled',
   'Failed Delivery',
-];
-
-export const PARCEL_TYPES: ParcelType[] = [
-  'Document',
-  'Parcel',
-  'Fragile',
-  'Electronics',
-  'Perishable',
-];
-
-export const HUBS = [
-  'Hyderabad Hub',
-  'Kazipet Sorting Centre',
-  'Vijayawada Gateway',
-  'Bengaluru Hub',
-  'Chennai Hub',
-  'Pune Hub',
 ];
 
 export function statusClass(status: DeliveryStatus): string {

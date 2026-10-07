@@ -26,7 +26,15 @@ export function removeKey(key: string): void {
 
 export const KEYS = {
   user: 'rw_user',
-  customers: 'rw_customers_v1',
-  shipments: 'rw_shipments_v1',
-  notices: 'rw_notices_v1',
+  baseCustomers: 'rw_base_customers',
+  baseShipments: 'rw_base_shipments',
+  baseTypes: 'rw_base_types',
+  custAdded: 'rw_cust_added',
+  custUpdated: 'rw_cust_updated',
+  custDeleted: 'rw_cust_deleted',
+  shipAdded: 'rw_ship_added',
+  shipUpdated: 'rw_ship_updated',
+  shipDeleted: 'rw_ship_deleted',
+  noticeExtra: 'rw_notice_extra',
+  noticeRead: 'rw_notice_read',
 } as const;
